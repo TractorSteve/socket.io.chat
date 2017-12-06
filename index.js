@@ -5,6 +5,8 @@ var path = require('path');
 var server = require('http').createServer(app);
 var io = require('socket.io')(server);
 var port = process.env.PORT || 3000;
+var numOfRooms = 0;
+var roomList = [];
 
 server.listen(port, function () {
   console.log('Server listening at port %d', port);
@@ -14,11 +16,19 @@ server.listen(port, function () {
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Chatroom
-
+function submitRoom() {
+  roomList[numOfRooms].push("random + Name");
+  ++numOfRooms;
+  return numOfRooms;
+}
 var numUsers = 0;
 
 io.on('connection', function (socket) {
   var addedUser = false;
+
+  socket.on('join room', function (room) {
+    socket.join(room);
+  });
 
   // when the client emits 'new message', this listens and executes
   socket.on('new message', function (data) {
@@ -27,6 +37,12 @@ io.on('connection', function (socket) {
       username: socket.username,
       message: data
     });
+  });
+
+  socket.on('show rooms', function (data) {
+    var showRooms = io.sockets.adapter.rooms;
+    //console.log(showRooms);
+    socket.broadcast.emit('new message', {username: socket.username, message: showRooms});// tells everyone about avilable rooms
   });
 
   // when the client emits 'add user', this listens and executes
@@ -73,4 +89,23 @@ io.on('connection', function (socket) {
       });
     }
   });
+
+  socket.on('leave room', function(room) {
+    socket.broadcast.emit('change channel', {
+      username: socket.username,
+      message: room
+    });
+    socket.leave(room);
+  });
 });
+
+
+/*
+  
+  when generating chat names, use naming style 
+  like in ranked "Varus chargers", "Volibear brutes" etc.
+  random "LOL_CHAMP" + "Adjectiv"
+
+  make sure two chats of that same name do not exsist
+
+*/

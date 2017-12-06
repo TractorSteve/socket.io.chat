@@ -16,6 +16,11 @@ $(function() {
   var $loginPage = $('.login.page'); // The login page
   var $chatPage = $('.chat.page'); // The chatroom page
 
+  var $roomPage = $('.room.page');
+  var $roomList = $('.roomList');
+  $roomPage.hide();
+  $roomList.hide();
+
   // Prompt for setting a username
   var username;
   var connected = false;
@@ -51,6 +56,11 @@ $(function() {
     }
   }
 
+  function chooseRoom () {
+    $chatPage.fadeOut();
+    $roomPage.show(); 
+  }
+
   // Sends a chat message
   function sendMessage () {
     var message = $inputMessage.val();
@@ -65,6 +75,8 @@ $(function() {
       });
       // tell server to execute 'new message' and send along one parameter
       socket.emit('new message', message);
+      showRooms();
+      console.log("show rooms sent");
     }
   }
 
@@ -247,6 +259,8 @@ $(function() {
     addParticipantsMessage(data);
   });
 
+  socket.on('show rooms')
+
   // Whenever the server emits 'user left', log it in the chat body
   socket.on('user left', function (data) {
     log(data.username + ' left');
@@ -278,5 +292,17 @@ $(function() {
   socket.on('reconnect_error', function () {
     log('attempt to reconnect has failed');
   });
+
+  socket.on('change channel', function (room) {
+    log(socket.username + " left " + room);
+  });
+
+  function showRooms () {
+    var ting = socket.emit('show rooms', "text");
+    setTimeout(function(){socket.emit('leave room', 'roomName'); socket.emit('show rooms', "text");}, 2000);
+    console.log(ting);
+    addChatMessage({username: username, message: ting});
+    //chooseRoom();
+  }
 
 });
